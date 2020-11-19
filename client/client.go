@@ -122,7 +122,9 @@ func DownloadFileFromDataNodes(fileName string, cdn1 client_data.ClientDataClien
 	sort.Slice(chunks, func(i, j int) bool {
 		return chunks[i].ChunkId < chunks[j].ChunkId
 	})
+	fmt.Println("chunks:")
 	for _,chunk:=range chunks{
+		fmt.Println(chunk.ChunkId)
 		chunksData=append(chunksData,chunk.Content)
 	}
 
@@ -163,6 +165,7 @@ func main(){
 	if err!=nil{
 		log.Fatalf("error subiendo archivos: %v",err)
 	}
+
 	err=DownloadFileFromDataNodes(fileName,cdn1)
 	if err!=nil{
 		log.Fatalf("error descargando archivo: %v",err)

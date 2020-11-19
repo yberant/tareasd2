@@ -82,9 +82,10 @@ func ChunksToFile(chunks [][]byte, name string, path string) error{
 
 		//chunkBufferBytes = nil // reset or empty our buffer
 
-		fmt.Println("Written ", n, " bytes")
 
 		fmt.Println("Recombining part [", j, "] into : ", newFileName)
+		fmt.Println("Written ", n, " bytes")
+
 		
     }
      // now, we close the newFileName

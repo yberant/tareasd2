@@ -20,6 +20,7 @@ type Server struct{
 	FriendIdA int64
 	FriendIdB int64
 	NodeId int64
+	//NameNodeCli data_name.DataNameClient
 	//Mode string //(excluido o centralizado)
 }
 

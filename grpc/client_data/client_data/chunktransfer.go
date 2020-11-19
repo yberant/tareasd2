@@ -75,6 +75,9 @@ func (server *Server) SendChunksToOtherDataNodes(chunks []*Chunk, fileName strin
 	}
 	//aca debería haver un if que pregunte si es distribuido o centralizado. En este caso es distribuido
 	err,aprobation:=server.DistributedRequest(directions)
+
+
+	
 	fmt.Print("aproved?: ")
 	fmt.Println(aprobation)
 	if err!=nil{
