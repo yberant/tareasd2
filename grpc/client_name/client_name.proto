@@ -8,6 +8,7 @@ package client_name;
 
 service ClientName{
     /*
+    NO IMPLEMENTADO AÚN
     Cliente le envía un "OrderReq" al NameNode, el cual contiene eel nombre de un archivo
     DataNode le envía una secuencua de OrderRes, cada uno conteniendo el id de un chunk y cual es el DataNode que lo contiene
     */

@@ -67,6 +67,7 @@ func ChunksToFile(chunks [][]byte, name string, path string) error{
     for j := 0; j < len(chunks); j++ {
 		//read a chunk
 		n, err := file.Write(chunks[j])
+		fmt.Println("chunk ", j ," size: ",len(chunks[j]))
 
 		if err != nil {
 				fmt.Println(err)

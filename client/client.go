@@ -4,19 +4,22 @@ import(
 	transform "./transform"
 	grpc "google.golang.org/grpc"
 	client_data "../grpc/client_data/client_data"
+	client_name "../grpc/client_name/client_name"
 	"fmt"
 	"context"
 	"log"
 	"sort"
+	"math/rand"
+	"time"
 
 )
 
-func SetDataNodeConnection(id string)(client_data.ClientDataClient, *grpc.ClientConn){
+func SetNameNodeConnection()(client_name.ClientNameClient, *grpc.ClientConn){
 	entry:
-		fmt.Println("ingrese dirección IP del servidor del data node "+id+" (en el formato: 255.255.255.255)")
+		fmt.Println("ingrese dirección IP del servidor del name node (en el formato: 255.255.255.255)")
 		var IPaddr string
 		fmt.Scanln(&IPaddr)
-		fmt.Println("ingrese el numero de puerto en el que el data node "+id+" está escuchando")
+		fmt.Println("ingrese el numero de puerto en el que el name node está escuchando a un cliente")
 		var PortNum string
 		fmt.Scanln(&PortNum)
 
@@ -27,18 +30,61 @@ func SetDataNodeConnection(id string)(client_data.ClientDataClient, *grpc.Client
 	if err!=nil{
 		goto entry
 	}
-	cdn:=client_data.NewClientDataClient(conn)
-	fmt.Println("created dataclient")
+	cdn:=client_name.NewClientNameClient(conn)
+	fmt.Println("conexión a namenode creada")
 	return cdn, conn
 }
 
+func SetDataNodeConnection(id string)(client_data.ClientDataClient, *grpc.ClientConn){
+	entry:
+		fmt.Println("ingrese dirección IP del servidor del data node "+id+" (en el formato: 255.255.255.255)")
+		var IPaddr string
+		fmt.Scanln(&IPaddr)
+		fmt.Println("ingrese el numero de puerto en el que el data node "+id+" está escuchando a un cliente")
+		var PortNum string
+		fmt.Scanln(&PortNum)
 
-func UploadFileToDataNodes(cdn client_data.ClientDataClient, fileName string) error{
+		CompleteAddr:=IPaddr+":"+PortNum
+		fmt.Println(CompleteAddr)
+		conn, err:=grpc.Dial(CompleteAddr,grpc.WithInsecure(),grpc.WithBlock())
+		//defer conn.Close()
+	if err!=nil{
+		goto entry
+	}
+	cnn:=client_data.NewClientDataClient(conn)
+	fmt.Println("conexión a datanode "+id+" creada")
+	return cnn, conn
+}
+
+
+func UploadFileToDataNodes(
+	cdn1 client_data.ClientDataClient,
+	cdn2 client_data.ClientDataClient,
+	cdn3 client_data.ClientDataClient,fileName string) error{
 	fmt.Println("attempting to download chunks")
 	chunks,err:=transform.FileToChunks(uploadPath,fileName)
 	if err!=nil{
 		return err
 	}
+
+	var cdn client_data.ClientDataClient
+	// se elige uno de los 3 aleatoriamente
+	rand.Seed(time.Now().UnixNano())
+	
+	nid:=int64(rand.Intn(3)+1)
+	fmt.Println("datanode elegido para transferir: ",nid)
+	switch nid{
+	case int64(1):
+		cdn=cdn1
+	case int64(2):
+		cdn=cdn2
+	case int64(3):
+		cdn=cdn3
+	}
+	//cdn=cdn1
+
+
+
 	fmt.Println("invoking stream")
 	stream, err:=cdn.UploadFile(context.Background())
 	if err!=nil {
@@ -77,10 +123,16 @@ func UploadFileToDataNodes(cdn client_data.ClientDataClient, fileName string) er
 	return nil
 }
 
-func DownloadFileFromDataNodes(fileName string, cdn1 client_data.ClientDataClient) error {
+func DownloadFileFromDataNodes(
+	cdn1 client_data.ClientDataClient,
+	cdn2 client_data.ClientDataClient,
+	cdn3 client_data.ClientDataClient,
+	cnn client_name.ClientNameClient, fileName string) error {
+
 	//actualmente solo manda a un solo nodo
+	//TODO: pedirle al namenode el verdadero orden!!!
 	fmt.Println("invoking stream")
-	stream, err:=cdn1.DownloadFile(context.Background())
+	stream, err:=cdn1.DownloadFile(context.Background())//esto funciona solo si los 3 datanodes comparten los chunks
 	fmt.Println("creating filename")
 	DonwnloadFileName:=&client_data.DownloadReq{
 		Req: &client_data.DownloadReq_FileName{
@@ -97,8 +149,8 @@ func DownloadFileFromDataNodes(fileName string, cdn1 client_data.ClientDataClien
 
 	chunksData:=[][]byte{}
 	chunks:=[]client_data.Chunk{}
-	//TODO: pedirle el verdadero orden al datanode
-	for i:=0;i<7;i++{
+	//TODO: pedirle el verdadero orden al namenode
+	for i:=0;i<=7;i++{
 		fmt.Printf("requesting chunk of id: %d \n",i)
 		chunkReq:=&client_data.DownloadReq{
 			Req: &client_data.DownloadReq_ChunkId{
@@ -156,17 +208,22 @@ func main(){
 
 	cdn1, connd1:=SetDataNodeConnection("1")
 	defer connd1.Close()
-	fmt.Println(cdn1)
+	cdn2, connd2:=SetDataNodeConnection("2")
+	defer connd2.Close()
+	cdn3, connd3:=SetDataNodeConnection("3")
+	defer connd3.Close()
+	cnn, conncn:=SetNameNodeConnection()
+	defer conncn.Close() 
 
 
 
 	fileName:="Dracula-Stoker_Bram.pdf"
-	err:=UploadFileToDataNodes(cdn1,fileName)
+	err:=UploadFileToDataNodes(cdn1,cdn2,cdn3,fileName)
 	if err!=nil{
 		log.Fatalf("error subiendo archivos: %v",err)
 	}
 
-	err=DownloadFileFromDataNodes(fileName,cdn1)
+	err=DownloadFileFromDataNodes(cdn1,cdn2,cdn3,cnn,fileName)
 	if err!=nil{
 		log.Fatalf("error descargando archivo: %v",err)
 	}

@@ -8,18 +8,21 @@ import(
 	//"math/rand"
 	"fmt"
 	data_data "../../data_data/data_data"
+	data_name "../../data_name/data_name"
 	//"time"
 	"context"
 )
 
 type Server struct{
 	FileChunksPath string
-
 	OtherDataNodeA data_data.DataDataClient
 	OtherDataNodeB data_data.DataDataClient
 	FriendIdA int64
 	FriendIdB int64
 	NodeId int64
+
+	NameNode data_name.DataNameClient
+	Mode string //excluido o centralizado
 	//NameNodeCli data_name.DataNameClient
 	//Mode string //(excluido o centralizado)
 }

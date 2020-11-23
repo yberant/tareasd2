@@ -246,6 +246,7 @@ const _ = grpc.SupportPackageIsVersion6
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type ClientNameClient interface {
 	//
+	//NO IMPLEMENTADO AÚN
 	//Cliente le envía un "OrderReq" al NameNode, el cual contiene eel nombre de un archivo
 	//DataNode le envía una secuencua de OrderRes, cada uno conteniendo el id de un chunk y cual es el DataNode que lo contiene
 	ChunksOrder(ctx context.Context, in *OrderReq, opts ...grpc.CallOption) (ClientName_ChunksOrderClient, error)
@@ -294,6 +295,7 @@ func (x *clientNameChunksOrderClient) Recv() (*OrderRes, error) {
 // ClientNameServer is the server API for ClientName service.
 type ClientNameServer interface {
 	//
+	//NO IMPLEMENTADO AÚN
 	//Cliente le envía un "OrderReq" al NameNode, el cual contiene eel nombre de un archivo
 	//DataNode le envía una secuencua de OrderRes, cada uno conteniendo el id de un chunk y cual es el DataNode que lo contiene
 	ChunksOrder(*OrderReq, ClientName_ChunksOrderServer) error

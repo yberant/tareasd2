@@ -8,9 +8,13 @@ package data_name;
 
 service DataName{
     
-
+    //NO IMPLEMENTADO AÚN
     //este se usa solo en caso de que el algoritmo sea de exclusion centralizada:
     rpc RequestOrder(stream OrderReq) returns (OrderRes){}
+
+    //NO IMPLEMENTADO AÚN
+    //datanode informa al namenode cual es el orden que tiene que escribir en el log
+    rpc InformOrder(stream OrderReq) returns (OrderRes){}
 
 }
 
