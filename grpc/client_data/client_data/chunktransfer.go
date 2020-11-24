@@ -6,6 +6,7 @@ import(
 	"context"
 	"time"
 	data_data "../../data_data/data_data"
+	data_name "../../data_name/data_name"
 )
 
 //esta versión solo se utilizaría en la distribuida
@@ -14,20 +15,10 @@ func (server *Server) SendChunksToOtherDataNodes(chunks []*Chunk, fileName strin
 	rand.Seed(time.Now().UnixNano())
 	fmt.Println("getting the id of other datanode A")
 	IDA:=server.FriendIdA
-	//idreq:=data_data.IdReq{Data: "..."}
-	/*IDA,err:=server.OtherDataNodeA.GetId(context.Background(),&idreq)
-	fmt.Println("received response for the id")
-	if err!=nil{
-		fmt.Printf("error: %v\n",err)
-		return err
-	}*/
+	
+
 	fmt.Println("received node id")
 	fmt.Printf("that id is: \n",IDA)
-	/*IDB,err:=server.OtherDataNodeB.GetId(context.Background(),&data_data.IdReq{})
-	if err!=nil{
-		return err
-	}*/
-
 
 	defineorder:
 	fmt.Println("defining order")
@@ -56,30 +47,52 @@ func (server *Server) SendChunksToOtherDataNodes(chunks []*Chunk, fileName strin
 
 	fmt.Print("final orders: ")
 	fmt.Println(nodeidsorders)
-	fmt.Println("adding the filename: "+fileName+" to the order requests")
-	directions:=[]*data_data.OrderReq{&data_data.OrderReq{
-		Req: &data_data.OrderReq_FileName{
-			FileName: fileName,
-		},
-	}}
-	fmt.Println("adding the orderrequests")
-	for i,order:=range nodeidsorders{
-		directions=append(directions,&data_data.OrderReq{
-			Req: &data_data.OrderReq_OrderData{
-				OrderData: &data_data.OrderData{
-					NodeId: order,
-					ChunkId: int64(i),		
-				},
-			},
-		})
-	}
-	//aca debería haver un if que pregunte si es distribuido o centralizado. En este caso es distribuido
-	err,aprobation:=server.DistributedRequest(directions)
-
-
 	
-	fmt.Print("aproved?: ")
-	fmt.Println(aprobation)
+	
+	//aca debería haver un if que pregunte si es distribuido o centralizado. En este caso es distribuido
+	var aprobation bool
+	var err error
+	if server.Mode=="distribuido"{
+		fmt.Println("adding the filename: "+fileName+" to the order requests")
+		directions:=[]*data_data.OrderReq{&data_data.OrderReq{
+			Req: &data_data.OrderReq_FileName{
+				FileName: fileName,
+			},
+		}}
+		fmt.Println("adding the orderrequests")
+		for i,order:=range nodeidsorders{
+			directions=append(directions,&data_data.OrderReq{
+				Req: &data_data.OrderReq_OrderData{
+					OrderData: &data_data.OrderData{
+						NodeId: order,
+						ChunkId: int64(i),		
+					},
+				},
+			})
+		}
+		err,aprobation=server.DistributedRequest(directions)
+	} else {//centralizado
+		fmt.Println("adding the filename: "+fileName+" to the order requests")
+		directions:=[]*data_name.OrderReq{&data_name.OrderReq{
+			Req: &data_name.OrderReq_FileName{
+				FileName: fileName,
+			},
+		}}
+		fmt.Println("adding the orderrequests")
+		for i,order:=range nodeidsorders{
+			directions=append(directions,&data_name.OrderReq{
+				Req: &data_name.OrderReq_OrderData{
+					OrderData: &data_name.OrderData{
+						NodeId: order,
+						ChunkId: int64(i),		
+					},
+				},
+			})
+		}
+		err,aprobation=server.CentralizedRequest(directions,server.NameNode) 
+	}
+	
+	fmt.Println("aproved?: ",aprobation)
 	if err!=nil{
 		return err
 	}
@@ -87,7 +100,6 @@ func (server *Server) SendChunksToOtherDataNodes(chunks []*Chunk, fileName strin
 	if aprobation==false{//si se rechazó la propuesta, se vuelve a armar otra
 		goto defineorder
 	}
-	
 	
 	fmt.Println("saving the filename to transfer")
 	//una vez se aprobaron, creo los arreglos en los que se enviarán la info. Parto con los nombres de archivos
@@ -119,12 +131,6 @@ func (server *Server) SendChunksToOtherDataNodes(chunks []*Chunk, fileName strin
 		}
 	}
 	fmt.Println("sending chunks:")
-	/*fmt.Print("chunks1: ")
-	fmt.Println(chunks1)
-	fmt.Print("chunks2: ")
-	fmt.Println(chunks2)
-	fmt.Print("chunks3: ")
-	fmt.Println(chunks3)*/
 	fmt.Println("IDA: ",IDA)
 	fmt.Println("my nodeId: ",server.NodeId)
 	//funcion definida en client_data.go: SendChunksToDataNode(chunks1)
@@ -201,9 +207,41 @@ func (server *Server) SendChunksToOtherDataNodes(chunks []*Chunk, fileName strin
 
 	fmt.Println("done")
 
-	//TODO: mandar info a namenode
+	//TODO: ENVIAR INFO A LOG DEL NAMENODE, LUEGO DE SOLUCIONAR LA WEAA CON EL ALGORITMO
+	//
+
+
+
+	//stream,err:=server.NameNode.InformOrder(context.Background())
+	//for i,totalChunks:=range nodeidsorders{
+	//	stream.Send(data_name.OrderReq{...})
+	//}
 	return nil
 
+}
+
+func (server *Server) CentralizedRequest(directions []*data_name.OrderReq, cli data_name.DataNameClient) (error, bool){
+	fmt.Println("sending the requests to name node")
+	stream,err:=cli.RequestOrder(context.Background())
+	if err!=nil{
+		return err,false
+	}
+	for _,data:=range directions{
+		if err := stream.Send(data); err != nil {
+			return err,false
+		}
+	}
+	reply,err:=stream.CloseAndRecv()
+	if reply.ResCode==data_name.OrderResCode_Yes{
+		fmt.Println("request accepted")
+		return nil, true
+	} else {
+		fmt.Println("request rejected")
+		return nil, false
+	}
+
+
+	return nil,true
 }
 
 func (server *Server) DistributedRequest(directions []*data_data.OrderReq) (error, bool){

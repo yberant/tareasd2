@@ -244,14 +244,14 @@ func main(){
 	}
 	mode:
 		fmt.Println("seleccione el modo: ")
-		fmt.Println("ingrese '1' para modo excluyente")
-		fmt.Println("ingrese '2' para modo centralizado")
+		fmt.Println("ingrese '1' para modo excluyente distribuido")
+		fmt.Println("ingrese '2' para modo excluyente centralizado")
 		var mod string 
 		fmt.Scanln(&mod)
 	switch mod{
 	case "1": 
-		fmt.Println("elegido modo excluyende")
-		Mode="excluyente"
+		fmt.Println("elegido modo distribuido")
+		Mode="distribuido"
 	case "2":
 		fmt.Println("elegido modo centralizado")
 		Mode="centralizado"

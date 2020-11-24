@@ -1,5 +1,5 @@
 /*
-desde el directorio "grpc", ejecutar el comando:
+para compilar, desde el directorio "grpc", ejecutar el comando:
 protoc --go_out=plugins=grpc:data_name data_name/data_name.proto
 */
 syntax = "proto3";
@@ -21,8 +21,13 @@ service DataName{
 message OrderReq{
     oneof Req{
         string FileName=1;
-        int64 ChunkId=2;
+        OrderData OrderData=2;
     }
+}
+
+message OrderData{
+    int64 ChunkId=1;
+    int64 NodeId=2;
 }
 
 message OrderInfo{

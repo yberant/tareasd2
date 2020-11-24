@@ -42,7 +42,7 @@ func ListenToDN(IPAddr string, PortNum string, NodeNum string) error {
 		fmt.Println("Escuchado datanode "+NodeNum +" desde: ",IPAddr+portstring)
 	}
 	cli_serv:=data_name.Server{
-
+		Probability: 0.9,
 	}
 
 	grpcServer:=grpc.NewServer()

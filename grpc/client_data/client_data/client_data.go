@@ -36,8 +36,9 @@ func (server *Server) UploadFile(stream ClientData_UploadFileServer) error{
 		upReq,err:=stream.Recv()
 		if err == io.EOF{
 			fmt.Println("sending chunks to friends")
-			//if server.Mode=="distribuido"{...
+
 			err=server.SendChunksToOtherDataNodes(totalChunks, fileName)//ver archivo "chunktransfer"".go, en este mismo paquete
+			
 			
 
 			if err!=nil{
@@ -47,6 +48,9 @@ func (server *Server) UploadFile(stream ClientData_UploadFileServer) error{
 					Message:fmt.Sprintf("Failed: %v\n",err),
 				})
 			}
+			
+
+
 			//server.printTotalChunks()
 			return stream.SendAndClose(&UploadRes{
 				ResCode:UploadResCode_Ok,

@@ -11,6 +11,7 @@ import(
 	"sort"
 	"math/rand"
 	"time"
+	"io"
 
 )
 
@@ -123,6 +124,33 @@ func UploadFileToDataNodes(
 	return nil
 }
 
+func RequestChunksOrders(cnn client_name.ClientNameClient, fileName string) ([]client_name.OrderRes,error){
+	stream,err:=cnn.ChunksOrder(context.Background(),&client_name.OrderReq{Filename:fileName})
+	if err!=nil{
+		return nil,err
+	}
+	orderchunks:=[]client_name.OrderRes{}
+
+	for{
+		in,err:=stream.Recv()
+		if err == io.EOF {
+			return orderchunks,nil
+		}
+		if err != nil {
+			return nil,err
+		}
+		order:=client_name.OrderRes{
+			ChunkId: in.GetChunkId(),
+			NodeId: in.GetNodeId(),
+		}
+		orderchunks=append(orderchunks,order)
+	}
+
+
+
+	return orderchunks,nil
+}
+
 func DownloadFileFromDataNodes(
 	cdn1 client_data.ClientDataClient,
 	cdn2 client_data.ClientDataClient,
@@ -131,6 +159,18 @@ func DownloadFileFromDataNodes(
 
 	//actualmente solo manda a un solo nodo
 	//TODO: pedirle al namenode el verdadero orden!!!
+	/* algo así como:
+		orderchunks, err:=RequestChunksOrders(cnn,fileName)
+		if err!=nil{
+			return nil
+		}
+
+		for i,order:=range orderchunks {
+			bla bla bla...
+		}
+	*/
+
+
 	fmt.Println("invoking stream")
 	stream, err:=cdn1.DownloadFile(context.Background())//esto funciona solo si los 3 datanodes comparten los chunks
 	fmt.Println("creating filename")
